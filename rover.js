@@ -2,39 +2,46 @@
 const Command = require('./command')
 const Message = require('./message')
 class Rover {
-   constructor(position, mode, generatorWatts){
+   constructor(position, mode = 'NORMAL', generatorWatts = 110){
       this.position = position;
       this.mode = mode;
       this.generatorWatts = generatorWatts;
 
    }
-   receieveMessage(message){
+   receiveMessage(message){
+      let response = {
+         message: message.name,
+         results: []
+      };
       for (let command of message.commands){
+         let result = {completed: true};
+
          switch (command.commandType){
             case "MOVE":
-               this.position = command.value;
+               if (this.mode === 'LOW_POWER') {
+                     result.completed =  false;
+                 }else {
+                  this.position = command.value;
+               }
                break;
             case "MODE_CHANGE":
                this.mode = command.value;
                break;
-            case "STATUS CHECK":
-               this.statusCheck();
+            case "STATUS_CHECK":
+               result.roverStatus = {
+                  mode: this.mode,
+                  generatorWatts: this.generatorWatts,
+                  position: this.position
+               };
                break;
             default:
-               console.log(`Unknown command type: ${command.commandType}`)
+               result.completed = false;
+               result.error = `Unknown command type: ${command.commandType}`;
          }
+         response.results.push(result);
       }
-
+      return response;
    }
-   statusCheck(){
-      return{
-         position: this.position,
-         mode: this.mode,
-         generatorWatts: this.generatorWatts
-
-      }
-   }
-
 }
 
 module.exports = Rover;
